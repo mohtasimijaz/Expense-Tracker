@@ -46,6 +46,8 @@ abstract final class AppFeedback {
         SnackBar(
           content: Text(message),
           duration: AppDurations.snackBar,
+          persist: false,
+
           backgroundColor: errorColor,
           action: label != null && onAction != null
               ? SnackBarAction(label: label, onPressed: onAction)
