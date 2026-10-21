@@ -215,11 +215,12 @@ deployment target is already 15.0.
 
 - **Android 5.0 and iOS 12 cannot be supported.** Flutter 3.38's minimum is
   Android 7.0 (API 24), and Firebase iOS SDK 12 requires iOS 15.
-- **Not yet built or run on a real Android or iOS device.** Android SDK
-  licences were not accepted on the development PC (run
-  `flutter doctor --android-licenses` to accept them), and iOS needs a Mac.
-  The app was tested with automated tests and as a release web build in
-  Chrome.
+- **Android:** the release APK builds and runs on a Samsung Galaxy S22 Ultra
+  (Android 16). Build it with Java 17–24: Android Studio's bundled Java 25 is
+  too new for Gradle 8.14, so point Flutter at another JDK, e.g.
+  `flutter config --jdk-dir="C:\Program Files\Java\jdk-23"`. The Kotlin
+  plugin is 2.3.0 because Firebase's Android libraries are built with Kotlin 2.4.
+- **iOS has not been built,** because that needs a Mac with Xcode.
 - **Budget alerts are in-app** (a dialog after saving), not system push
   notifications. Push reminders would need `flutter_local_notifications`
   and the notification permission.

@@ -27,10 +27,6 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
-    }
-
     defaultConfig {
         applicationId = "com.mohtasimijaz.expensetracker"
         // Android 7.0 (API 24): the lowest version supported by Flutter 3.38.
@@ -69,6 +65,13 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+}
+
+// Kotlin 2.3+ replaces android.kotlinOptions with the compilerOptions DSL.
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
     }
 }
 
