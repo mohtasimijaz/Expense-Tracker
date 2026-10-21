@@ -1,6 +1,6 @@
 # Expense Tracker
 
-[![Live demo](https://img.shields.io/badge/Live%20demo-Open%20app-4F46E5?style=for-the-badge&logo=flutter&logoColor=white)](https://mohtasimijaz.github.io/expense-tracker/)
+[![Live demo](https://img.shields.io/badge/Live%20demo-Open%20app-4F46E5?style=for-the-badge&logo=flutter&logoColor=white)]( https://mohtasimijaz.github.io/Expense-Tracker/)
 [![Download APK](https://img.shields.io/badge/Android-Download%20APK-15803D?style=for-the-badge&logo=android&logoColor=white)](https://github.com/mohtasimijaz/expense-tracker/releases/latest)
 
 **Try it live in your browser:** https://mohtasimijaz.github.io/expense-tracker/
