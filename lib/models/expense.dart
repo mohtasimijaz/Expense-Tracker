@@ -1,17 +1,16 @@
 import 'package:hive/hive.dart';
 
-/// Represents a single expense record in the application.
-///
-/// Designed with immutability, full null-safety, and serialization
-/// support for Hive database and JSON export/import.
-class Expense {
-  final String id;
-  final String title;
-  final double amount;
-  final String category;
-  final DateTime date;
-  final String? note;
+part 'expense.g.dart';
 
+/// A single expense record.
+///
+/// Immutable and null-safe. Persisted with Hive through the generated
+/// [ExpenseAdapter] (`dart run build_runner build`). Field numbers in
+/// `@HiveField` must never be changed or reused once released, otherwise
+/// existing users' data could not be read.
+@HiveType(typeId: 0)
+class Expense {
+  /// Creates an expense.
   const Expense({
     required this.id,
     required this.title,
@@ -21,7 +20,32 @@ class Expense {
     this.note,
   });
 
-  /// Creates a copy of this expense with modified fields.
+  /// Unique identifier (UUID v4). Also used as the database key.
+  @HiveField(0)
+  final String id;
+
+  @HiveField(1)
+  final String title;
+
+  /// Amount in the user's selected currency. Always > 0.
+  @HiveField(2)
+  final double amount;
+
+  /// Category id from `CategoryData`.
+  @HiveField(3)
+  final String category;
+
+  /// When the money was spent.
+  @HiveField(4)
+  final DateTime date;
+
+  /// Optional free-text note.
+  @HiveField(5)
+  final String? note;
+
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// Pass [clearNote] to explicitly remove the note.
   Expense copyWith({
     String? id,
     String? title,
@@ -29,6 +53,7 @@ class Expense {
     String? category,
     DateTime? date,
     String? note,
+    bool clearNote = false,
   }) {
     return Expense(
       id: id ?? this.id,
@@ -36,11 +61,11 @@ class Expense {
       amount: amount ?? this.amount,
       category: category ?? this.category,
       date: date ?? this.date,
-      note: note ?? this.note,
+      note: clearNote ? null : (note ?? this.note),
     );
   }
 
-  /// Converts this [Expense] to a map representation for JSON export or backup.
+  /// Serialises to a JSON-compatible map (for export/backup).
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -48,21 +73,24 @@ class Expense {
       'amount': amount,
       'category': category,
       'date': date.toIso8601String(),
-      'note': note ?? '',
+      'note': note,
     };
   }
 
-  /// Creates an [Expense] from a map representation.
+  /// Parses a map produced by [toMap]. Missing or malformed values fall back
+  /// to safe defaults instead of throwing.
   factory Expense.fromMap(Map<String, dynamic> map) {
+    final rawDate = map['date'];
+    final rawNote = map['note'];
     return Expense(
       id: map['id'] as String? ?? '',
       title: map['title'] as String? ?? '',
-      amount: (map['amount'] as num?)?.toDouble() ?? 0.0,
+      amount: (map['amount'] as num?)?.toDouble() ?? 0,
       category: map['category'] as String? ?? 'Other',
-      date: map['date'] != null
-          ? DateTime.tryParse(map['date'] as String) ?? DateTime.now()
+      date: rawDate is String
+          ? DateTime.tryParse(rawDate) ?? DateTime.now()
           : DateTime.now(),
-      note: map['note'] as String?,
+      note: rawNote is String && rawNote.isNotEmpty ? rawNote : null,
     );
   }
 
@@ -82,50 +110,7 @@ class Expense {
   int get hashCode => Object.hash(id, title, amount, category, date, note);
 
   @override
-  String toString() {
-    return 'Expense(id: $id, title: $title, amount: $amount, category: $category, date: $date, note: $note)';
-  }
-}
-
-/// Hive TypeAdapter for [Expense] to enable high-performance binary serialization
-/// without requiring external build_runner code generation.
-class ExpenseAdapter extends TypeAdapter<Expense> {
-  @override
-  final int typeId = 0;
-
-  @override
-  Expense read(BinaryReader reader) {
-    final numOfFields = reader.readByte();
-    final fields = <int, dynamic>{
-      for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
-    };
-    return Expense(
-      id: fields[0] as String? ?? '',
-      title: fields[1] as String? ?? '',
-      amount: (fields[2] as num?)?.toDouble() ?? 0.0,
-      category: fields[3] as String? ?? 'Other',
-      date: fields[4] != null
-          ? DateTime.fromMillisecondsSinceEpoch(fields[4] as int)
-          : DateTime.now(),
-      note: fields[5] as String?,
-    );
-  }
-
-  @override
-  void write(BinaryWriter writer, Expense obj) {
-    writer
-      ..writeByte(6)
-      ..writeByte(0)
-      ..write(obj.id)
-      ..writeByte(1)
-      ..write(obj.title)
-      ..writeByte(2)
-      ..write(obj.amount)
-      ..writeByte(3)
-      ..write(obj.category)
-      ..writeByte(4)
-      ..write(obj.date.millisecondsSinceEpoch)
-      ..writeByte(5)
-      ..write(obj.note);
-  }
+  String toString() =>
+      'Expense(id: $id, title: $title, amount: $amount, '
+      'category: $category, date: $date, note: $note)';
 }

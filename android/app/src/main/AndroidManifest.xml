@@ -1,6 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Only permission the app needs: Firebase Crashlytics/Analytics and font download. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="expense_tracker"
+        android:label="Expense Tracker"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

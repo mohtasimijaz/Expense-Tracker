@@ -1,28 +1,49 @@
 import 'package:flutter/material.dart';
-import 'screens/expense_home_page.dart';
 
-void main() {
-  runApp(const ExpenseTrackerApp());
+import 'app.dart';
+import 'providers/settings_provider.dart';
+import 'services/database_service.dart';
+import 'services/expense_repository.dart';
+import 'services/monitoring_service.dart';
+import 'services/settings_service.dart';
+
+/// App entry point.
+///
+/// Start-up order:
+/// 1. Firebase (crash reporting + analytics) — falls back to a no-op
+///    monitor if Firebase is not configured yet.
+/// 2. Settings and the Hive database, in parallel.
+/// 3. `runApp`. If the database failed to open, the splash screen retries
+///    and shows an error with a "Try again" button instead of crashing.
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final monitoring = await FirebaseMonitoringService.initialize();
+  final region = WidgetsBinding.instance.platformDispatcher.locale.countryCode;
+  final settings = SettingsProvider(
+    SettingsService(regionCode: region),
+    monitoring: monitoring,
+  );
+  final database = DatabaseService();
+
+  await Future.wait([settings.load(), _openDatabase(database, monitoring)]);
+
+  runApp(
+    ExpenseTrackerApp(
+      repository: database,
+      settings: settings,
+      monitoring: monitoring,
+    ),
+  );
 }
 
-class ExpenseTrackerApp extends StatelessWidget {
-  const ExpenseTrackerApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Expense Tracker',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6C63FF),
-          primary: const Color(0xFF6C63FF),
-          secondary: const Color(0xFF03DAC6),
-        ),
-        useMaterial3: true,
-        fontFamily: 'Roboto',
-      ),
-      home: const ExpenseHomePage(),
-    );
+Future<void> _openDatabase(
+  DatabaseService database,
+  MonitoringService monitoring,
+) async {
+  try {
+    await database.init();
+  } on DatabaseException catch (error, stackTrace) {
+    await monitoring.recordError(error, stackTrace);
   }
 }

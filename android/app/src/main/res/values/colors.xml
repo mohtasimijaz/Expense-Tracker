@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the Flutter splash background so the hand-over is seamless. -->
+    <color name="splash_background">#F8FAFC</color>
+	<color name="ic_launcher_background">#4F46E5</color>
+</resources>
