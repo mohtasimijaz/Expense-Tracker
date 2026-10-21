@@ -7,9 +7,12 @@ import '../constants/app_strings.dart';
 import '../models/budget_status.dart';
 import '../models/expense.dart';
 import '../models/expense_sort.dart';
+import '../models/insight_models.dart';
 import '../services/expense_repository.dart';
+import '../services/insights_calculator.dart';
 import '../services/monitoring_service.dart';
 import '../services/statistics_calculator.dart';
+import '../services/timeline_builder.dart';
 
 /// Loading state of the expense list.
 enum LoadStatus { initial, loading, ready, error }
@@ -48,6 +51,7 @@ class ExpenseProvider extends ChangeNotifier {
   DateTimeRange? _dateRange;
   int _visibleCount = pageSize;
   List<Expense>? _filteredCache;
+  List<DayGroup>? _timelineCache;
 
   Expense? _lastDeleted;
   List<Expense>? _lastCleared;
@@ -97,6 +101,22 @@ class ExpenseProvider extends ChangeNotifier {
   /// Largest amount in [filteredExpenses], or 0.
   double get filteredHighest =>
       filteredExpenses.fold(0, (max, e) => e.amount > max ? e.amount : max);
+
+  /// Whether the timeline (day groups) applies: only for date sorts.
+  bool get isTimeline =>
+      _sort == ExpenseSort.newestFirst || _sort == ExpenseSort.oldestFirst;
+
+  /// [visibleExpenses] grouped by day, with each day's full total (cached).
+  List<DayGroup> get timeline => _timelineCache ??= TimelineBuilder.group(
+    visibleExpenses,
+    filteredExpenses,
+  );
+
+  /// Whether the most recent single delete can still be undone.
+  bool get canUndoDelete => _lastDeleted != null;
+
+  /// Insights, streaks and recaps over all expenses.
+  InsightsCalculator get insights => InsightsCalculator(_all, now: _clock());
 
   /// Whether the last cleared list can still be restored.
   bool get canUndoClear => _lastCleared != null;
@@ -306,7 +326,14 @@ class ExpenseProvider extends ChangeNotifier {
   void loadMore() {
     if (!hasMore) return;
     _visibleCount += pageSize;
+    _timelineCache = null;
     _notify();
+  }
+
+  /// Makes the delete of [id] final (its undo bar was closed). Ignored if a
+  /// newer delete has replaced it, so that one can still be undone.
+  void commitDelete(String id) {
+    if (_lastDeleted?.id == id) _lastDeleted = null;
   }
 
   /// Clears [errorMessage].
@@ -371,6 +398,7 @@ class ExpenseProvider extends ChangeNotifier {
 
   void _invalidate() {
     _filteredCache = null;
+    _timelineCache = null;
     _notify();
   }
 

@@ -7,21 +7,27 @@ import '../../constants/app_dimens.dart';
 import '../../constants/app_strings.dart';
 import '../../models/expense.dart';
 import '../../providers/expense_provider.dart';
-import '../../screens/add_expense_screen.dart';
+import '../../providers/settings_provider.dart';
+import '../../services/timeline_builder.dart';
 import '../../utils/app_routes.dart';
-import '../common/app_feedback.dart';
+import '../../utils/formatters.dart';
+import '../common/expense_actions.dart';
 import '../empty_state_widget.dart';
 import '../expense_card.dart';
+import 'day_header.dart';
 
-/// The lazily built, swipe-to-delete expense list (as a sliver).
+/// The expense list as a sliver.
 ///
-/// Only [ExpenseProvider.visibleExpenses] are built; the home screen asks
-/// for the next page as the user nears the end.
+/// When sorted by date it is a timeline: one sticky header per day. Other
+/// sorts show a flat list. Only [ExpenseProvider.visibleExpenses] are built;
+/// the home screen loads the next page as the user nears the end.
 class ExpenseSliverList extends StatelessWidget {
-  /// Creates the list. [onAdd] opens the add screen from the empty state.
+  /// Creates the list. [onAdd] opens quick add from the empty state.
   const ExpenseSliverList({super.key, required this.onAdd});
 
   final VoidCallback onAdd;
+
+  static const double _slideBegin = 0.15;
 
   @override
   Widget build(BuildContext context) {
@@ -43,36 +49,75 @@ class ExpenseSliverList extends StatelessWidget {
         ),
       );
     }
-    final animate = AppMotion.enabled(context);
-    return SliverList.builder(
-      itemCount: items.length + (provider.hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= items.length) {
-          return const Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-        final expense = items[index];
-        final delay =
-            AppDurations.listItemStagger *
-            (index % AppDurations.maxStaggeredItems);
-        return Padding(
-          key: ValueKey(expense.id),
-          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-          child: _DismissibleExpense(expense: expense)
-              .animate()
-              .fadeIn(
-                duration: animate ? AppDurations.medium : Duration.zero,
-                delay: animate ? delay : Duration.zero,
-              )
-              .slideY(
-                begin: animate ? 0.15 : 0,
-                end: 0,
-                curve: Curves.easeOutCubic,
+    final loader = provider.hasMore
+        ? const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          )
+        : null;
+    if (!provider.isTimeline) {
+      return SliverMainAxisGroup(
+        slivers: [
+          SliverList.builder(
+            itemCount: items.length,
+            itemBuilder: (context, i) => _item(context, items[i], i),
+          ),
+          ?loader,
+        ],
+      );
+    }
+    final groups = provider.timeline;
+    final maxTotal = TimelineBuilder.maxTotal(groups);
+    final formatter = context.select<SettingsProvider, CurrencyFormatter>(
+      (s) => s.formatter,
+    );
+    final background = Theme.of(context).scaffoldBackgroundColor;
+    return SliverMainAxisGroup(
+      slivers: [
+        for (final group in groups)
+          SliverMainAxisGroup(
+            slivers: [
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: DayHeaderDelegate(
+                  group: group,
+                  maxTotal: maxTotal,
+                  formatter: formatter,
+                  background: background,
+                ),
               ),
-        );
-      },
+              SliverList.builder(
+                itemCount: group.expenses.length,
+                itemBuilder: (context, i) =>
+                    _item(context, group.expenses[i], i),
+              ),
+            ],
+          ),
+        ?loader,
+      ],
+    );
+  }
+
+  Widget _item(BuildContext context, Expense expense, int index) {
+    final animate = AppMotion.enabled(context);
+    final delay =
+        AppDurations.listItemStagger * (index % AppDurations.maxStaggeredItems);
+    return Padding(
+      key: ValueKey(expense.id),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+      child: _DismissibleExpense(expense: expense)
+          .animate()
+          .fadeIn(
+            duration: animate ? AppDurations.medium : Duration.zero,
+            delay: animate ? delay : Duration.zero,
+          )
+          .slideY(
+            begin: animate ? _slideBegin : 0,
+            end: 0,
+            curve: Curves.easeOutCubic,
+          ),
     );
   }
 }
@@ -82,45 +127,14 @@ class _DismissibleExpense extends StatelessWidget {
 
   final Expense expense;
 
-  Future<void> _delete(BuildContext context) async {
-    // This item leaves the tree as soon as it is removed from the list, so
-    // grab everything needed after the await up front.
-    final provider = context.read<ExpenseProvider>();
-    final messenger = ScaffoldMessenger.of(context);
-    final danger = context.palette.danger;
-    final ok = await provider.deleteExpense(expense.id);
-    if (!ok) {
-      AppFeedback.showSnackOn(
-        messenger,
-        provider.errorMessage ?? AppStrings.errorDelete,
-        errorColor: danger,
-      );
-      return;
-    }
-    AppFeedback.showSnackOn(
-      messenger,
-      '"${expense.title}" ${AppStrings.expenseDeleted}',
-      actionLabel: AppStrings.undo,
-      onAction: () async {
-        final restored = await provider.undoDelete();
-        if (!restored) {
-          AppFeedback.showSnackOn(
-            messenger,
-            AppStrings.errorRestore,
-            errorColor: danger,
-          );
-        }
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final danger = context.palette.danger;
     return Dismissible(
       key: ValueKey('dismiss-${expense.id}'),
       direction: DismissDirection.endToStart,
-      onDismissed: (_) => _delete(context),
+      onDismissed: (_) =>
+          ExpenseActions.delete(ExpenseActionTargets.of(context), expense),
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -144,9 +158,8 @@ class _DismissibleExpense extends StatelessWidget {
       ),
       child: ExpenseCard(
         expense: expense,
-        onTap: () => Navigator.of(
-          context,
-        ).push(AppRoutes.fadeSlide<void>(AddExpenseScreen(expense: expense))),
+        onTap: () => ExpenseActions.edit(context, expense),
+        onLongPress: () => ExpenseActions.showOptions(context, expense),
       ),
     );
   }

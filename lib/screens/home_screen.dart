@@ -13,8 +13,11 @@ import '../widgets/home/balance_header.dart';
 import '../widgets/home/category_filter_bar.dart';
 import '../widgets/home/expense_list_header.dart';
 import '../widgets/home/expense_sliver_list.dart';
+import '../widgets/home/gesture_hint.dart';
 import '../widgets/home/search_sort_bar.dart';
+import '../widgets/home/streak_chip.dart';
 import '../widgets/home/summary_row.dart';
+import '../widgets/insights/insight_carousel.dart';
 
 /// Main screen: monthly balance, budget, summary, filters and the list.
 class HomeScreen extends StatelessWidget {
@@ -74,7 +77,17 @@ class _HomeContent extends StatelessWidget {
     final animate = AppMotion.enabled(context);
     final header = <Widget>[
       const SizedBox(height: AppSpacing.md),
-      Text(AppStrings.homeGreeting, style: theme.textTheme.headlineSmall),
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              AppStrings.homeGreeting,
+              style: theme.textTheme.headlineSmall,
+            ),
+          ),
+          const StreakChip(),
+        ],
+      ),
       Text(
         AppDateFormat.full(DateTime.now()),
         style: theme.textTheme.bodySmall,
@@ -84,12 +97,15 @@ class _HomeContent extends StatelessWidget {
       const SizedBox(height: AppSpacing.md),
       const SummaryRow(),
       const SizedBox(height: AppSpacing.lg),
+      const InsightCarousel(),
+      const SizedBox(height: AppSpacing.lg),
       const SearchSortBar(),
       const SizedBox(height: AppSpacing.sm),
       const CategoryFilterBar(),
       const SizedBox(height: AppSpacing.sm),
       const ExpenseListHeader(),
       const SizedBox(height: AppSpacing.xs),
+      const GestureHint(),
     ];
     return Center(
       child: ConstrainedBox(
@@ -120,11 +136,14 @@ class _HomeContent extends StatelessWidget {
                   ),
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
+                  // Room for the glass nav bar (in the bottom padding because
+                  // the shell extends its body behind it) plus the + button.
+                  padding: EdgeInsets.fromLTRB(
                     AppSpacing.md,
                     0,
                     AppSpacing.md,
-                    AppSizes.fabClearance,
+                    MediaQuery.paddingOf(context).bottom +
+                        AppSizes.fabClearance,
                   ),
                   sliver: ExpenseSliverList(onAdd: onAdd),
                 ),

@@ -83,6 +83,7 @@ abstract final class AppStrings {
   static const String errorClear = 'Could not delete your expenses.';
   static const String errorSettings = 'Could not save the setting.';
   static const String errorUnknown = 'An unexpected error occurred.';
+  static const String errorShare = 'Could not share the recap.';
 
   // Add / edit
   static const String addExpenseTitle = 'New expense';
@@ -182,6 +183,93 @@ abstract final class AppStrings {
   static const String currencyPickerTitle = 'Choose currency';
   static const String currencySearchHint = 'Search by name or code';
   static const String currencyNoResults = 'No currency found';
+
+  // Delete, undo and options
+  static const String expenseDeletedTitle = 'Expense deleted';
+  static const String expenseRestored = 'Expense restored';
+  static const String dismiss = 'Dismiss';
+  static const String optionsEdit = 'Edit';
+  static const String optionsDelete = 'Delete';
+  static const String gestureHint =
+      'Swipe left to delete · Press and hold for more options';
+
+  // Quick add
+  static const String quickAddTitle = 'Add expense';
+  static const String quickAddMoreDetails = 'More details';
+  static const String quickAddSave = 'Save';
+  static const String keypadBackspace = 'Delete last digit';
+  static const String keypadDecimal = 'Decimal point';
+
+  // Haptics setting
+  static const String settingHaptics = 'Haptic feedback';
+  static const String settingHapticsSubtitle =
+      'Vibrate on taps, saves and deletes';
+
+  // Streaks and celebrations
+  static const String streakTooltip =
+      'Days in a row with at least one expense logged';
+  static const String celebrationButton = 'Awesome!';
+  static String streakChip(int days) => '$days-day streak';
+  static String streakCelebrationTitle(int days) => '$days-day streak!';
+  static String streakCelebrationMessage(int days) =>
+      "You've logged expenses $days days in a row. Keep it going!";
+  static String monthCelebrationTitle(String month) => '$month: under budget!';
+  static String monthCelebrationMessage(String saved) =>
+      'You stayed within your budget and kept $saved. Well done!';
+
+  // Insights
+  static const String insightsTitle = 'Insights';
+  static const String insightPaceGood = 'On track';
+  static const String insightPaceBad = 'Heads up';
+  static const String insightWeekend = 'Weekend effect';
+  static const String insightTopCategory = 'Top category';
+  static const String insightNoSpend = 'No-spend days';
+  static const String insightBiggest = 'Biggest expense';
+  static const String insightRecapMessage = 'Tap to see your month in review';
+  static String insightPace(String amount, int percent) =>
+      "At this pace you'll spend $amount this month — $percent% of your "
+      'budget.';
+  static String insightCategoryTitle(String category) => '$category spending';
+  static String insightCategoryLess(int percent, String category) =>
+      'You spent $percent% less on $category than this time last month 🎉';
+  static String insightCategoryMore(int percent, String category) =>
+      'You spent $percent% more on $category than this time last month.';
+  static String insightWeekendMore(String ratio) =>
+      'Weekends cost you $ratio× more per day than weekdays.';
+  static String insightWeekdayMore(String ratio) =>
+      'Weekdays cost you $ratio× more per day than weekends.';
+  static String insightTopCategoryMessage(String category, int percent) =>
+      '$category is $percent% of your spending this month.';
+  static String insightNoSpendMessage(int days) =>
+      '$days no-spend ${days == 1 ? 'day' : 'days'} this month. Nice '
+      'discipline! 💪';
+  static String insightBiggestMessage(String title, String amount) =>
+      '$title — $amount.';
+  static String insightRecapTitle(String month) => 'Your $month recap';
+
+  // Monthly recap
+  static const String recapTooltip = 'Monthly recap';
+  static const String recapYouSpent = 'You spent';
+  static const String recapTopCategory = 'Your top category';
+  static const String recapBiggestDay = 'Your biggest day';
+  static const String recapNoSpendDays = 'No-spend days';
+  static const String recapShare = 'Share';
+  static const String recapClose = 'Close';
+  static const String recapEmpty = 'No expenses this month yet.';
+  static const String recapFooter = 'Made with Expense Tracker';
+  static String recapTitle(String month, {required bool current}) =>
+      current ? '$month so far' : 'Your $month';
+  static String recapCount(int count) =>
+      'across $count ${count == 1 ? 'expense' : 'expenses'}';
+  static String recapAverage(String amount) => "That's $amount a day";
+  static String recapShareOf(int percent) => '$percent% of everything';
+  static String recapCompared(String month) => 'Compared with $month';
+  static String recapLess(int percent) => '$percent% less 🎉';
+  static String recapMore(int percent) => '$percent% more';
+  static String recapNoSpendMessage(int days, int total) =>
+      '$days of $total days without spending';
+  static String recapShareText(String month) =>
+      'My $month spending recap from Expense Tracker';
 
   // Privacy policy
   static const String privacyTitle = 'Privacy policy';

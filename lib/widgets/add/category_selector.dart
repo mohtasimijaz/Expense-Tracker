@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/app_dimens.dart';
 import '../../constants/category_data.dart';
+import '../../utils/app_haptics.dart';
 import '../common/pressable_scale.dart';
 
 /// Grid of selectable category tiles for the add/edit form.
@@ -51,7 +52,10 @@ class _CategoryTile extends StatelessWidget {
     return Semantics(
       selected: selected,
       child: PressableScale(
-        onTap: onTap,
+        onTap: () {
+          AppHaptics.play(context, HapticKind.selection);
+          onTap();
+        },
         child: AnimatedContainer(
           duration: AppDurations.medium,
           curve: Curves.easeOutCubic,

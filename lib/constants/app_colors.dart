@@ -61,7 +61,21 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.backgroundGradient,
     required this.glassTint,
     required this.decoration,
+    this.warningGradient = _warningGradient,
+    this.dangerGradient = _dangerGradient,
   });
+
+  // Deep amber/orange and red/rose keep white text above 4.5:1 contrast.
+  static const Gradient _warningGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFB45309), Color(0xFFC2410C)],
+  );
+  static const Gradient _dangerGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFFB91C1C), Color(0xFFBE185D)],
+  );
 
   final Color success;
   final Color warning;
@@ -72,6 +86,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Gradient backgroundGradient;
   final Color glassTint;
   final Color decoration;
+
+  /// Balance card when spending reached the warning threshold.
+  final Gradient warningGradient;
+
+  /// Balance card when the budget is exceeded.
+  final Gradient dangerGradient;
 
   /// Palette used in light mode.
   static const AppPalette light = AppPalette(
@@ -130,6 +150,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Gradient? backgroundGradient,
     Color? glassTint,
     Color? decoration,
+    Gradient? warningGradient,
+    Gradient? dangerGradient,
   }) {
     return AppPalette(
       success: success ?? this.success,
@@ -141,6 +163,8 @@ class AppPalette extends ThemeExtension<AppPalette> {
       backgroundGradient: backgroundGradient ?? this.backgroundGradient,
       glassTint: glassTint ?? this.glassTint,
       decoration: decoration ?? this.decoration,
+      warningGradient: warningGradient ?? this.warningGradient,
+      dangerGradient: dangerGradient ?? this.dangerGradient,
     );
   }
 
@@ -161,6 +185,12 @@ class AppPalette extends ThemeExtension<AppPalette> {
           backgroundGradient,
       glassTint: Color.lerp(glassTint, other.glassTint, t) ?? glassTint,
       decoration: Color.lerp(decoration, other.decoration, t) ?? decoration,
+      warningGradient:
+          Gradient.lerp(warningGradient, other.warningGradient, t) ??
+          warningGradient,
+      dangerGradient:
+          Gradient.lerp(dangerGradient, other.dangerGradient, t) ??
+          dangerGradient,
     );
   }
 }

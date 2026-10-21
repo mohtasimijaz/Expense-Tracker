@@ -13,10 +13,18 @@ import 'common/pressable_scale.dart';
 /// One expense in the list: category icon, title, badge, date and amount.
 class ExpenseCard extends StatelessWidget {
   /// Creates a card. [onTap] usually opens the edit screen.
-  const ExpenseCard({super.key, required this.expense, this.onTap});
+  const ExpenseCard({
+    super.key,
+    required this.expense,
+    this.onTap,
+    this.onLongPress,
+  });
 
   final Expense expense;
   final VoidCallback? onTap;
+
+  /// Opens the options menu (edit / delete).
+  final VoidCallback? onLongPress;
 
   // Largest share of the row the amount may take.
   static const double _amountMaxFraction = 0.45;
@@ -35,6 +43,7 @@ class ExpenseCard extends StatelessWidget {
     final hasNote = expense.note != null;
     return PressableScale(
       onTap: onTap,
+      onLongPress: onLongPress,
       semanticLabel: '${expense.title}, ${formatter.format(expense.amount)}',
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.sm),

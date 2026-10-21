@@ -39,6 +39,49 @@ light/dark themes, prepared for Google Play and the App Store.
 - 7-day bar chart, 6-month trend line, and a category donut chart (this
   month or all time) with breakdown bars.
 
+**Quick add (new)**
+- The + button opens a sheet with large rolling digits, a built-in number
+  pad and one row of category bubbles. Save in about 3 seconds; the title
+  defaults to the category name.
+- "More details" opens the full form with the amount and category carried over.
+- Works with a hardware keyboard too: digits, Backspace, Enter.
+
+**Feedback when saving and deleting (new)**
+- Green tick "Expense saved/updated" after every add or edit.
+- Red bin animation "Expense deleted" after every delete (swipe, press-and-hold
+  menu, or the edit screen), then a bar with **UNDO** and **✕**. UNDO restores
+  the expense with a green tick "Expense restored"; ✕ cancels the undo and
+  makes the delete final. A thin line shows the 5 seconds left to undo.
+- Press and hold any expense for Edit and Delete options.
+
+**Living balance card (new)**
+- The gradient shifts with the budget: indigo when on track, deep amber in the
+  warning zone, red–rose when over, and slowly rotates.
+- This month's total rolls like an odometer when it changes.
+- A ring shows the share of the budget used.
+- The card tilts with the phone's motion (mouse on web/desktop) with a moving
+  light reflection.
+
+**Timeline list (new)**
+- When sorted by date, expenses are grouped by day under sticky headers
+  ("Today · 3 · Rs 2,450") with a mini bar comparing day totals.
+- A one-time tip explains swipe-to-delete and press-and-hold.
+
+**Habits and celebrations (new)**
+- Light vibrations on taps, saves, deletes and budget alerts, which can be
+  turned off in Settings → Haptic feedback.
+- 🔥 streak chip for consecutive days with logged expenses; confetti and a
+  message at 3, 7, 14, 30, 60, 100, 180 and 365 days (once per streak).
+- Confetti when last month finished within budget (shown once, on opening).
+
+**Insights and monthly recap (new)**
+- Swipeable insight cards: budget pace, category change vs the same days last
+  month, weekend vs weekday spending, top category, no-spend days and the
+  biggest expense.
+- A story-style monthly recap (from the last insight card, or the ✨ button on
+  Statistics) with auto-advancing slides; tap to move, hold to pause, and
+  share any slide as an image.
+
 **Settings**
 - About 155 world currencies with search. The default currency comes from the
   phone's region (Pakistan → PKR, India → INR, Germany → EUR, and so on).
@@ -79,7 +122,7 @@ lib/
 assets/
 ├── icon/                      app icon source images
 └── lottie/                    empty / success / loading animations
-test/                          77 automated tests (see TEST_REPORT.md)
+test/                          115 automated tests (see TEST_REPORT.md)
 ```
 
 **Why Hive instead of sqflite:** expenses are simple records that are always
@@ -190,5 +233,12 @@ deployment target is already 15.0.
   well, but `hive_ce` is a maintained drop-in fork worth moving to later.
 - **Analytics and Crashlytics do nothing** until Firebase is connected (see
   above), and they never run on web or desktop.
+- **Not yet checked on a real phone:** motion tilt, vibrations and the
+  native share sheet. On web and desktop the card tilts with the mouse
+  instead, and vibration does nothing.
+- **The month-end celebration compares last month with the current budget,**
+  because past budgets are not stored.
+- **After installing an update on web,** browsers can briefly keep the old
+  version cached. A hard refresh (Ctrl+Shift+R) loads the new one.
 - **Text is English-only.** Every string is in `lib/constants/app_strings.dart`,
   ready to move to ARB files for translation.

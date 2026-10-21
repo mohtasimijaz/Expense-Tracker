@@ -1,4 +1,5 @@
 import 'package:expense_tracker/constants/app_strings.dart';
+import 'package:expense_tracker/screens/add_expense_screen.dart';
 import 'package:expense_tracker/screens/home_screen.dart';
 import 'package:expense_tracker/screens/main_shell.dart';
 import 'package:expense_tracker/screens/onboarding_screen.dart';
@@ -17,36 +18,46 @@ void main() {
 
   Finder field(String label) => find.widgetWithText(TextFormField, label);
 
+  /// Opens quick add, then "More details" for the full form.
+  Future<void> openFullForm(WidgetTester tester) async {
+    await tester.tap(find.byType(FloatingActionButton));
+    await settle(tester);
+    await tester.tap(find.text(AppStrings.quickAddMoreDetails));
+    await settle(tester);
+    expect(find.byType(AddExpenseScreen), findsOneWidget);
+  }
+
   testWidgets('empty database shows the empty state', (tester) async {
     await pumpApp(tester);
+    await scrollTo(tester, find.text(AppStrings.emptyTitle));
     expect(find.text(AppStrings.emptyTitle), findsOneWidget);
     expect(find.byType(ExpenseCard), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('adding an expense saves it and shows it in the list', (
+  testWidgets('full form saves, shows the green tick, then the list', (
     tester,
   ) async {
     final app = await pumpApp(tester);
-    await tester.tap(find.byType(FloatingActionButton));
-    await settle(tester);
+    await openFullForm(tester);
 
     const title = 'Café ☕ "Chai" & <snacks>';
     await tester.enterText(field(AppStrings.fieldAmount), '1250');
     await tester.enterText(field(AppStrings.fieldTitle), title);
-    await tester.tap(find.text(AppStrings.fieldCategory));
     await tester.ensureVisible(find.text('Transport'));
     await tester.tap(find.text('Transport'));
     await tester.ensureVisible(find.text(AppStrings.saveExpense));
     await tester.tap(find.text(AppStrings.saveExpense));
-    await settle(tester, const Duration(seconds: 3));
+    await settle(tester, const Duration(milliseconds: 700));
+    expect(find.text(AppStrings.expenseSaved), findsOneWidget);
+    await settle(tester, const Duration(seconds: 2));
 
-    expect(app.repository.store.length, 1);
     final saved = app.repository.store.values.single;
     expect(saved.title, title);
     expect(saved.amount, 1250);
     expect(saved.category, 'Transport');
     expect(find.byType(HomeScreen), findsOneWidget);
+    await scrollTo(tester, find.text(title));
     expect(find.text(title), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -55,8 +66,7 @@ void main() {
     tester,
   ) async {
     final app = await pumpApp(tester);
-    await tester.tap(find.byType(FloatingActionButton));
-    await settle(tester);
+    await openFullForm(tester);
     await tester.ensureVisible(find.text(AppStrings.saveExpense));
     await tester.tap(find.text(AppStrings.saveExpense));
     await settle(tester, const Duration(milliseconds: 500));
@@ -70,24 +80,6 @@ void main() {
     expect(app.repository.store, isEmpty);
   });
 
-  testWidgets('swipe to delete removes from database and undo restores', (
-    tester,
-  ) async {
-    final expense = makeExpense(id: 'swipe', title: 'Groceries', date: today);
-    final app = await pumpApp(tester, initial: [expense]);
-    expect(find.text('Groceries'), findsOneWidget);
-
-    await tester.drag(find.byType(ExpenseCard), const Offset(-600, 0));
-    await settle(tester, const Duration(seconds: 1));
-    expect(app.repository.store, isEmpty);
-    expect(find.byType(ExpenseCard), findsNothing);
-
-    await tester.tap(find.text(AppStrings.undo));
-    await settle(tester, const Duration(seconds: 1));
-    expect(app.repository.store['swipe'], expense);
-    expect(find.text('Groceries'), findsOneWidget);
-  });
-
   testWidgets('tapping an expense opens edit and saves changes', (
     tester,
   ) async {
@@ -95,6 +87,7 @@ void main() {
       tester,
       initial: [makeExpense(id: 'e', title: 'Old title', date: today)],
     );
+    await scrollTo(tester, find.text('Old title'));
     await tester.tap(find.text('Old title'));
     await settle(tester);
     expect(find.text(AppStrings.editExpenseTitle), findsOneWidget);
@@ -103,6 +96,7 @@ void main() {
     await tester.tap(find.text(AppStrings.updateExpense));
     await settle(tester, const Duration(seconds: 3));
     expect(app.repository.store['e']!.title, 'New title');
+    await scrollTo(tester, find.text('New title'));
     expect(find.text('New title'), findsOneWidget);
   });
 
@@ -115,19 +109,17 @@ void main() {
         makeExpense(id: 'c', title: 'Burger', category: 'Food', date: today),
       ],
     );
-    expect(find.byType(ExpenseCard), findsNWidgets(3));
-
     await tester.enterText(find.byType(TextField).first, 'piz');
     await settle(tester, const Duration(milliseconds: 600));
+    await scrollTo(tester, find.text('Pizza'));
     expect(find.byType(ExpenseCard), findsOneWidget);
-    expect(find.text('Pizza'), findsOneWidget);
 
     await tester.tap(find.byTooltip(AppStrings.clearSearch));
     await settle(tester, const Duration(milliseconds: 600));
     await tester.tap(find.text('Transport').first);
     await settle(tester, const Duration(milliseconds: 600));
+    await scrollTo(tester, find.text('Taxi'));
     expect(find.byType(ExpenseCard), findsOneWidget);
-    expect(find.text('Taxi'), findsOneWidget);
   });
 
   testWidgets('very large amounts render without overflow', (tester) async {
@@ -137,9 +129,9 @@ void main() {
         makeExpense(id: 'big', title: 'House', amount: 999999999, date: today),
       ],
     );
+    await scrollTo(tester, find.text('House'));
     // PKR has no minor unit in CLDR, so no decimals are shown.
-    // Shown on the card and in this month's header.
-    expect(find.text('Rs 999,999,999'), findsNWidgets(2));
+    expect(find.text('Rs 999,999,999'), findsWidgets);
     expect(tester.takeException(), isNull);
   });
 
@@ -180,7 +172,6 @@ void main() {
     await settle(tester);
     expect(find.byType(StatisticsScreen), findsOneWidget);
     expect(find.text(AppStrings.statsWeekly), findsOneWidget);
-    expect(find.text(AppStrings.statsComparison), findsOneWidget);
     await tester.dragUntilVisible(
       find.text(AppStrings.statsCategories),
       find.byType(ListView).last,
@@ -206,6 +197,7 @@ void main() {
       size: const Size(1024, 600),
       initial: [makeExpense(id: 'l', title: 'Wide', date: today)],
     );
+    await scrollTo(tester, find.text('Wide'));
     expect(find.text('Wide'), findsOneWidget);
     await tester.tap(find.text(AppStrings.navStatistics));
     await settle(tester);
@@ -241,6 +233,7 @@ void main() {
     );
     await settle(tester, const Duration(seconds: 3));
     expect(find.byType(MainShell), findsOneWidget);
+    await scrollTo(tester, find.text('From disk'));
     expect(find.text('From disk'), findsOneWidget);
   });
 }

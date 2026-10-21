@@ -5,6 +5,7 @@ import 'package:expense_tracker/providers/expense_provider.dart';
 import 'package:expense_tracker/providers/settings_provider.dart';
 import 'package:expense_tracker/screens/main_shell.dart';
 import 'package:expense_tracker/services/settings_service.dart';
+import 'package:expense_tracker/widgets/home/tilt_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -35,6 +36,7 @@ Future<TestApp> pumpApp(
   Size size = phoneSize,
 }) async {
   AppTypography.useGoogleFonts = false;
+  TiltCard.sensorsEnabled = false;
   SharedPreferences.setMockInitialValues(prefs);
   tester.view.physicalSize = size * tester.view.devicePixelRatio;
   addTearDown(tester.view.resetPhysicalSize);
@@ -68,4 +70,22 @@ Future<void> settle(
   for (var elapsed = Duration.zero; elapsed < total; elapsed += step) {
     await tester.pump(step);
   }
+}
+
+/// Scrolls the home list until [finder] is built and visible.
+Future<void> scrollTo(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    200,
+    scrollable: find.byType(Scrollable).first,
+    maxScrolls: 60,
+  );
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+/// Scrolls the home list to the very end (like a user would before
+/// swiping the last item, so it is clear of the nav bar and + button).
+Future<void> scrollToEnd(WidgetTester tester) async {
+  await tester.drag(find.byType(Scrollable).first, const Offset(0, -400));
+  await settle(tester, const Duration(milliseconds: 1500));
 }

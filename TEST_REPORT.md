@@ -2,7 +2,7 @@
 
 **Date:** 21 October 2026
 **Result:** `flutter analyze` reports no issues, and `flutter test` passes
-**77 / 77** tests with 0 failures and no exceptions logged during tests.
+**115 / 115** tests with 0 failures, no exceptions and no missed taps logged.
 
 ## How each file was checked
 
@@ -178,3 +178,51 @@ These were mistakes in the tests, not in the app:
   project is connected.
 - **Release app size and console output on a real device.** The release web
   build showed no console warnings.
+
+---
+
+# Round 2: experience upgrade
+
+Features: quick add, delete animation with undo and cancel, the
+press-and-hold menu, the living balance card, the timeline, haptics, streaks,
+celebrations, insights and the monthly recap.
+
+## New and updated test files
+
+| File | Tests | Covers |
+|---|---|---|
+| `test/services/insights_calculator_test.dart` | 18 | Streaks (gaps, today/yesterday), milestones once per streak, month-end celebration rules, recap numbers (current and finished month), every insight type, timeline grouping |
+| `test/providers/quick_add_controller_test.dart` | 7 | Number-pad rules: leading zeros, one decimal point, currency decimals (0 for PKR), 12-digit cap, backspace, clear, Save enabled only for valid amounts |
+| `test/new_features_test.dart` | 14 | Quick add saves with the green tick; Save blocked for 0 or empty; "More details" carries over amount and category; swipe → bin animation → UNDO → "Expense restored"; ✕ makes the delete final; press-and-hold → Delete and → Edit; timeline headers and totals, flat list for amount sort; streak chip; streak celebration; month-end celebration; budget ring at 150% over budget; insight card → recap story → close; haptics switch and tip dismissal remembered |
+| `test/widget_test.dart` | 12 | Updated for the new + flow (quick add → More details) and scrolling |
+
+**Total: 115 tests** (database 13, expense provider 17, statistics 8,
+insights 18, settings 7, quick add 7, models 13, project 6, widgets 26).
+
+## Bugs found and fixed in round 2
+
+| File | Problem found | Fix |
+|---|---|---|
+| `widgets/home/day_header.dart` | **Rendering error:** the sticky day header was only as tall as its text (20px instead of 48px), so it reported an invalid layout as it reached the screen edge (found by the widget tests) | The header now always fills its full height |
+| `screens/home_screen.dart` | **Hidden content:** the list's bottom padding ignored the glass nav bar's height, so the last expense and the tip's ✕ could stay behind the nav bar and + button even when fully scrolled | Bottom padding now adds the real nav-bar height |
+| `screens/main_shell.dart` | The month-end celebration could check before expenses had loaded and miss it | It now waits until the expenses are ready |
+| `providers/expense_provider.dart` | Deleting a second expense while the first one's undo bar was closing could cancel the second's undo | "Make final" only applies to the expense its own bar belongs to |
+| `widgets/home/day_header.dart` | The frosted blur ran even when the header wasn't pinned (wasted work) | Blur only while pinned |
+| `widgets/home/balance_header.dart`, `budget_line.dart` | Labels cut off on narrow phones ("Spent this m…", "of Rs 40,…"), seen in the browser | Labels scale down to fit; file split to stay under 200 lines |
+| `widgets/quick_add/category_bubbles.dart` | The selected bubble's glow was clipped at the edge, seen in the browser | Padding added around the row |
+| `widgets/home/tilt_card.dart` | A leftover unused constant | Removed |
+
+Test-only correction: the undo test tapped UNDO while the bar was still
+sliding in, so the tap missed. The test now waits like a person would.
+
+## Browser check (release web build)
+- **Confirmed visually:** the new Home screen (streak chip, budget ring,
+  budget line, insights) and the quick-add sheet (rolling amount, category
+  bubbles, number pad, decimal key hidden for PKR).
+- **Not completed in the browser:** typing and saving through the pane, because
+  it kept switching to the background, which pauses the page. The same flows
+  pass in the widget tests above.
+
+## Not verified in round 2
+- Motion tilt from real phone sensors, vibrations, and the native share sheet
+  (they need a real Android or iOS device).

@@ -4,20 +4,27 @@ import 'package:provider/provider.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimens.dart';
 import '../../constants/app_strings.dart';
-import '../../constants/app_theme.dart';
 import '../../models/budget_status.dart';
 import '../../providers/expense_provider.dart';
 import '../../providers/settings_provider.dart';
 import '../../utils/formatters.dart';
-import '../animated_counter.dart';
 import '../common/glass_container.dart';
+import '../common/rolling_text.dart';
 import '../settings/budget_dialog.dart';
-import 'budget_progress.dart';
+import 'budget_line.dart';
+import 'budget_ring.dart';
+import 'living_gradient.dart';
+import 'tilt_card.dart';
 
-/// Gradient hero card at the top of Home: this month's spending with an
-/// animated counter and the budget progress on a glass panel.
+/// The "living" balance card at the top of Home.
+///
+/// - Gradient shifts with the budget: indigo → amber (warning) → red (over),
+///   and slowly rotates.
+/// - This month's total rolls like an odometer when it changes.
+/// - A ring shows how much of the budget is used.
+/// - The card tilts with phone motion (or the mouse) with a light reflection.
 class BalanceHeader extends StatelessWidget {
-  /// Creates the header.
+  /// Creates the card.
   const BalanceHeader({super.key});
 
   static const double _mutedOpacity = 0.85;
@@ -40,103 +47,87 @@ class BalanceHeader extends StatelessWidget {
       limit: limit,
       thresholdPercent: threshold,
     );
+    final gradient = switch (status.level) {
+      BudgetLevel.exceeded => palette.dangerGradient,
+      BudgetLevel.warning => palette.warningGradient,
+      _ => palette.brandGradient,
+    };
     const onBrand = AppColors.white;
-    final onBrandMuted = onBrand.withValues(alpha: _mutedOpacity);
+    final muted = onBrand.withValues(alpha: _mutedOpacity);
 
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        gradient: palette.brandGradient,
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        boxShadow: [
-          BoxShadow(
-            color: theme.colorScheme.primary.withValues(
-              alpha: AppEffects.glassBorderOpacity,
-            ),
-            blurRadius: AppEffects.shadowBlur,
-            offset: const Offset(0, AppEffects.shadowOffsetY),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return TiltCard(
+      radius: AppRadius.xxl,
+      child: LivingGradient(
+        gradient: gradient,
+        radius: AppRadius.xxl,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.calendar_month_rounded,
-                color: onBrandMuted,
-                size: AppSizes.iconSm,
-              ),
-              const SizedBox(width: AppSpacing.xxs),
-              Flexible(
-                child: Text(
-                  AppStrings.homeThisMonth,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: onBrandMuted,
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_month_rounded,
+                              color: muted,
+                              size: AppSizes.iconSm,
+                            ),
+                            const SizedBox(width: AppSpacing.xxs),
+                            Flexible(
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  AppStrings.homeThisMonth,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: muted,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: RollingText(
+                            formatter.format(spent),
+                            style: theme.textTheme.displaySmall?.copyWith(
+                              color: onBrand,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  if (status.hasBudget) ...[
+                    const SizedBox(width: AppSpacing.sm),
+                    BudgetRing(
+                      progress: status.progress,
+                      percent: status.percentUsed,
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              GlassContainer(
+                padding: const EdgeInsets.all(AppSpacing.sm),
+                borderRadius: AppRadius.lg,
+                child: status.hasBudget
+                    ? BudgetLine(status: status, formatter: formatter)
+                    : SetBudgetPrompt(onTap: () => showBudgetDialog(context)),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
-            child: AnimatedCounter(
-              value: spent,
-              format: formatter.format,
-              style: theme.textTheme.displaySmall?.copyWith(
-                color: onBrand,
-                fontFeatures: AppTypography.tabularFigures,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          GlassContainer(
-            padding: const EdgeInsets.all(AppSpacing.sm),
-            borderRadius: AppRadius.lg,
-            child: status.hasBudget
-                ? BudgetProgress(status: status, formatter: formatter)
-                : _SetBudgetPrompt(onTap: () => showBudgetDialog(context)),
-          ),
-        ],
+        ),
       ),
-    );
-  }
-}
-
-class _SetBudgetPrompt extends StatelessWidget {
-  const _SetBudgetPrompt({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Row(
-      children: [
-        const Icon(Icons.flag_rounded, color: AppColors.white),
-        const SizedBox(width: AppSpacing.xs),
-        Expanded(
-          child: Text(
-            AppStrings.homeSetBudgetPrompt,
-            style: theme.textTheme.bodySmall?.copyWith(color: AppColors.white),
-          ),
-        ),
-        TextButton(
-          onPressed: onTap,
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.white,
-            backgroundColor: AppColors.white.withValues(
-              alpha: AppEffects.glassBorderOpacity,
-            ),
-          ),
-          child: const Text(AppStrings.homeSetBudgetAction),
-        ),
-      ],
     );
   }
 }

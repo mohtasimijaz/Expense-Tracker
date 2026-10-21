@@ -65,6 +65,9 @@ abstract final class AppSizes {
   /// Content never grows wider than this so tablets/landscape stay readable.
   static const double maxContentWidth = 720;
 
+  /// Bottom sheets stay phone-width on tablets and desktop.
+  static const double maxSheetWidth = 480;
+
   /// Above this width two-column layouts are used.
   static const double wideBreakpoint = 720;
 
@@ -97,6 +100,8 @@ abstract final class AppDurations {
   static const Duration counter = Duration(milliseconds: 900);
   static const Duration splashMinimum = Duration(milliseconds: 1800);
   static const Duration success = Duration(milliseconds: 1400);
+  static const Duration deleteFeedback = Duration(milliseconds: 1100);
+  static const Duration undoWindow = Duration(seconds: 5);
   static const Duration snackBar = Duration(seconds: 4);
   static const Duration listItemStagger = Duration(milliseconds: 40);
   static const Duration searchDebounce = Duration(milliseconds: 250);

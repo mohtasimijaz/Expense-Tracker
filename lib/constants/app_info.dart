@@ -18,4 +18,5 @@ abstract final class AppAssets {
   static const String lottieEmpty = 'assets/lottie/empty_wallet.json';
   static const String lottieSuccess = 'assets/lottie/success.json';
   static const String lottieLoading = 'assets/lottie/loading_coin.json';
+  static const String lottieDeleted = 'assets/lottie/deleted.json';
 }

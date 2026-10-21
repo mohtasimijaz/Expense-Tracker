@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../constants/app_colors.dart';
 import '../constants/app_dimens.dart';
 import '../constants/app_strings.dart';
-import '../utils/app_routes.dart';
+import '../providers/expense_provider.dart';
+import '../utils/app_haptics.dart';
+import '../widgets/common/celebrations.dart';
 import '../widgets/common/finance_background.dart';
 import '../widgets/common/glass_container.dart';
+import '../widgets/quick_add/quick_add_sheet.dart';
 import 'add_expense_screen.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
@@ -29,17 +33,39 @@ class _MainShellState extends State<MainShell> {
 
   @override
   void dispose() {
+    _expenses?.removeListener(_checkMonthEnd);
     _tab.dispose();
     super.dispose();
   }
 
-  void _openAdd() {
-    Navigator.of(context).push(
-      AppRoutes.fadeSlide<void>(
-        const AddExpenseScreen(),
-        fullscreenDialog: true,
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    // Once expenses are loaded: celebrate last month if it stayed in budget.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _expenses = context.read<ExpenseProvider>()..addListener(_checkMonthEnd);
+      _checkMonthEnd();
+    });
+  }
+
+  ExpenseProvider? _expenses;
+
+  void _checkMonthEnd() {
+    final expenses = _expenses;
+    if (!mounted || expenses == null) return;
+    if (expenses.status != LoadStatus.ready) return;
+    expenses.removeListener(_checkMonthEnd);
+    _expenses = null;
+    Celebrations.monthEnd(SaveFlowTargets.of(context));
+  }
+
+  void _openAdd() => showQuickAddSheet(context);
+
+  void _selectTab(int index) {
+    if (index == _tab.value) return;
+    AppHaptics.play(context, HapticKind.selection);
+    _tab.value = index;
   }
 
   @override
@@ -87,7 +113,7 @@ class _MainShellState extends State<MainShell> {
                 opacity: context.isDarkMode ? AppEffects.glassOpacity : 0.7,
                 child: NavigationBar(
                   selectedIndex: tab,
-                  onDestinationSelected: (i) => _tab.value = i,
+                  onDestinationSelected: _selectTab,
                   height: AppSizes.buttonHeight + AppSpacing.md,
                   destinations: const [
                     NavigationDestination(

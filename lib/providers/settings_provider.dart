@@ -104,6 +104,27 @@ class SettingsProvider extends ChangeNotifier {
     return ok;
   }
 
+  /// Turns vibration feedback on or off.
+  Future<bool> setHapticsEnabled(bool enabled) =>
+      _update(_settings.copyWith(hapticsEnabled: enabled));
+
+  /// Hides the "swipe to delete / hold for options" tip for good.
+  Future<bool> dismissGestureHint() =>
+      _update(_settings.copyWith(gestureHintDismissed: true));
+
+  /// Remembers that the under-budget celebration for [monthKey] was shown.
+  Future<bool> markMonthCelebrated(String monthKey) =>
+      _update(_settings.copyWith(celebratedMonthKey: monthKey));
+
+  /// Remembers that [length] days of the streak starting [start] was
+  /// celebrated.
+  Future<bool> markStreakCelebrated(DateTime start, int length) => _update(
+    _settings.copyWith(
+      celebratedStreakStart: start,
+      celebratedStreakLength: length,
+    ),
+  );
+
   Future<bool> _update(AppSettings next) async {
     final previous = _settings;
     _settings = next;

@@ -1,15 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimens.dart';
 import '../../constants/app_info.dart';
 import '../../constants/app_strings.dart';
 import '../../models/budget_status.dart';
-import '../../utils/app_routes.dart';
 import '../../utils/formatters.dart';
+import 'status_dialog.dart';
 
 /// Snackbars, dialogs and the success animation used across the app.
 abstract final class AppFeedback {
@@ -57,26 +54,35 @@ abstract final class AppFeedback {
       );
   }
 
-  /// Plays the success animation with [message] and closes automatically.
-  static Future<void> showSuccess(BuildContext context, String message) async {
-    final navigator = Navigator.of(context);
-    var closed = false;
-    unawaited(
-      showGeneralDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: AppColors.black.withValues(alpha: 0.3),
-        transitionDuration: AppDurations.medium,
-        pageBuilder: (dialogContext, _, _) => _SuccessDialog(message: message),
-        transitionBuilder: (context, animation, _, child) => ScaleTransition(
-          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
-          child: FadeTransition(opacity: animation, child: child),
+  /// Plays the green-tick animation with [message] and closes automatically.
+  static Future<void> showSuccess(BuildContext context, String message) =>
+      showSuccessOn(Navigator.of(context), message);
+
+  /// Like [showSuccess] on a [navigator] captured earlier.
+  static Future<void> showSuccessOn(NavigatorState navigator, String message) =>
+      showStatusDialog(
+        navigator,
+        message: message,
+        style: const StatusStyle(
+          asset: AppAssets.lottieSuccess,
+          fallbackIcon: Icons.check_circle_rounded,
         ),
-      ).then((_) => closed = true),
-    );
-    await Future<void>.delayed(AppDurations.success);
-    if (!closed && navigator.mounted) navigator.pop();
-  }
+        color: navigator.context.palette.success,
+        duration: AppDurations.success,
+      );
+
+  /// Plays the red "deleted" bin animation and closes automatically.
+  static Future<void> showDeletedOn(NavigatorState navigator, String message) =>
+      showStatusDialog(
+        navigator,
+        message: message,
+        style: const StatusStyle(
+          asset: AppAssets.lottieDeleted,
+          fallbackIcon: Icons.delete_rounded,
+        ),
+        color: navigator.context.palette.danger,
+        duration: AppDurations.deleteFeedback,
+      );
 
   /// Shows a warning or "exceeded" dialog for [status].
   static Future<void> showBudgetAlert(
@@ -151,44 +157,5 @@ abstract final class AppFeedback {
       ),
     );
     return result ?? false;
-  }
-}
-
-class _SuccessDialog extends StatelessWidget {
-  const _SuccessDialog({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Material(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xxl),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox.square(
-                dimension: AppSizes.successArt,
-                child: Lottie.asset(
-                  AppAssets.lottieSuccess,
-                  repeat: false,
-                  animate: AppMotion.enabled(context),
-                  errorBuilder: (context, error, stackTrace) => Icon(
-                    Icons.check_circle_rounded,
-                    size: AppSizes.iconHero,
-                    color: context.palette.success,
-                  ),
-                ),
-              ),
-              Text(message, style: theme.textTheme.titleMedium),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

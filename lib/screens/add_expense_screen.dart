@@ -5,23 +5,35 @@ import '../constants/app_dimens.dart';
 import '../constants/app_strings.dart';
 import '../models/expense.dart';
 import '../providers/expense_form_controller.dart';
-import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/expense_validator.dart';
 import '../widgets/add/expense_form_view.dart';
 import '../widgets/common/app_feedback.dart';
+import '../widgets/common/celebrations.dart';
+import '../widgets/common/expense_actions.dart';
 import '../widgets/expense_card.dart';
 
 /// Full-screen form to add a new expense, or edit [expense] when given.
 class AddExpenseScreen extends StatefulWidget {
   /// Creates the screen.
-  const AddExpenseScreen({super.key, this.expense});
+  const AddExpenseScreen({
+    super.key,
+    this.expense,
+    this.initialAmount,
+    this.initialCategory,
+  });
 
   /// Hero tag shared with the floating "add" button.
   static const String addHeroTag = 'add-expense-hero';
 
   /// The expense being edited, or `null` to add a new one.
   final Expense? expense;
+
+  /// Pre-filled amount for a new expense (e.g. from quick add).
+  final double? initialAmount;
+
+  /// Pre-selected category id for a new expense.
+  final String? initialCategory;
 
   @override
   State<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -41,10 +53,14 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.initState();
     final initial = widget.expense;
     final formatter = context.read<SettingsProvider>().formatter;
-    _form = ExpenseFormController(initial: initial);
+    _form = ExpenseFormController(
+      initial: initial,
+      initialCategory: widget.initialCategory,
+    );
+    final startAmount = initial?.amount ?? widget.initialAmount;
     _title = TextEditingController(text: initial?.title);
     _amount = TextEditingController(
-      text: initial == null ? null : formatter.plain(initial.amount),
+      text: startAmount == null ? null : formatter.plain(startAmount),
     );
     _note = TextEditingController(text: initial?.note);
   }
@@ -58,15 +74,13 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     super.dispose();
   }
 
+  /// Saves, closes the screen, then plays the green tick (and any budget
+  /// alert or streak celebration) on the screen underneath.
   Future<void> _save() async {
     if (_form.isSaving || !(_formKey.currentState?.validate() ?? false)) return;
-    final expenses = context.read<ExpenseProvider>();
-    final settings = context.read<SettingsProvider>();
-    final limits = settings.settings;
-    final before = expenses.budgetStatus(
-      limit: limits.monthlyBudget,
-      thresholdPercent: limits.alertThresholdPercent,
-    );
+    final targets = SaveFlowTargets.of(context);
+    final expenses = targets.expenses;
+    final before = targets.budgetStatus();
     final expense = Expense(
       id: widget.expense?.id ?? expenses.newId(),
       title: _title.text,
@@ -89,41 +103,18 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       );
       return;
     }
-    await AppFeedback.showSuccess(
-      context,
-      _isEdit ? AppStrings.expenseUpdated : AppStrings.expenseSaved,
-    );
-    if (!mounted) return;
-    final after = expenses.budgetStatus(
-      limit: limits.monthlyBudget,
-      thresholdPercent: limits.alertThresholdPercent,
-    );
-    if (limits.budgetAlertsEnabled && after.shouldAlertComparedTo(before)) {
-      await AppFeedback.showBudgetAlert(context, after, settings.formatter);
-    }
-    if (mounted) Navigator.of(context).pop();
+    targets.navigator.pop();
+    await Celebrations.afterSave(targets, before: before, isEdit: _isEdit);
   }
 
+  /// Closes this screen, then deletes with the bin animation and undo bar on
+  /// the screen underneath.
   Future<void> _delete() async {
     final expense = widget.expense;
     if (expense == null) return;
-    final provider = context.read<ExpenseProvider>();
-    final messenger = ScaffoldMessenger.of(context);
-    final navigator = Navigator.of(context);
-    final ok = await provider.deleteExpense(expense.id);
-    if (!ok) {
-      if (mounted) {
-        AppFeedback.showSnack(context, AppStrings.errorDelete, isError: true);
-      }
-      return;
-    }
-    navigator.pop();
-    AppFeedback.showSnackOn(
-      messenger,
-      '"${expense.title}" ${AppStrings.expenseDeleted}',
-      actionLabel: AppStrings.undo,
-      onAction: provider.undoDelete,
-    );
+    final targets = ExpenseActionTargets.of(context);
+    targets.navigator.pop();
+    await ExpenseActions.delete(targets, expense);
   }
 
   @override

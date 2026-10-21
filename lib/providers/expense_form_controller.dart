@@ -7,11 +7,17 @@ import '../models/expense.dart';
 /// flag), kept out of the screen so the screen never calls `setState`.
 class ExpenseFormController extends ChangeNotifier {
   /// Starts from [initial] when editing, or from defaults when adding.
-  ExpenseFormController({Expense? initial, DateTime Function()? clock})
-    : _clock = clock ?? DateTime.now,
-      _categoryId = initial?.category ?? CategoryData.defaultCategory.id,
-      _date = initial?.date ?? (clock ?? DateTime.now)(),
-      _originalDate = initial?.date;
+  ExpenseFormController({
+    Expense? initial,
+    String? initialCategory,
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now,
+       _categoryId =
+           initial?.category ??
+           initialCategory ??
+           CategoryData.defaultCategory.id,
+       _date = initial?.date ?? (clock ?? DateTime.now)(),
+       _originalDate = initial?.date;
 
   final DateTime Function() _clock;
   final DateTime? _originalDate;

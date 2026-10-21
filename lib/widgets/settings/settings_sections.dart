@@ -76,6 +76,15 @@ class PreferencesSection extends StatelessWidget {
                 applySetting(context, provider.setThemeMode(s.first)),
           ),
         ),
+        const Divider(indent: AppSpacing.md, endIndent: AppSpacing.md),
+        SwitchListTile(
+          secondary: const SettingsIcon(Icons.vibration_rounded),
+          title: const Text(AppStrings.settingHaptics),
+          subtitle: const Text(AppStrings.settingHapticsSubtitle),
+          value: provider.settings.hapticsEnabled,
+          onChanged: (v) =>
+              applySetting(context, provider.setHapticsEnabled(v)),
+        ),
       ],
     );
   }

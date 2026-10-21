@@ -33,6 +33,21 @@ class CurrencyFormatter {
   /// Short amount for tight spaces, e.g. `Rs 1.2M`.
   String compact(double amount) => '$_prefix${_compact.format(amount)}';
 
+  /// Groups what the user is typing (`1250.5` → `1,250.5`), keeping a
+  /// trailing "." or zeros exactly as typed.
+  String typing(String raw) {
+    if (raw.isEmpty) return '0';
+    final dot = raw.indexOf('.');
+    final whole = dot < 0 ? raw : raw.substring(0, dot);
+    final grouped = NumberFormat.decimalPattern(
+      _locale,
+    ).format(int.tryParse(whole.isEmpty ? '0' : whole) ?? 0);
+    return dot < 0 ? grouped : '$grouped${raw.substring(dot)}';
+  }
+
+  /// The currency symbol as shown before amounts.
+  String get symbol => currency.symbol;
+
   /// Plain number without symbol or grouping, for pre-filling inputs.
   String plain(double amount) {
     final fixed = amount.toStringAsFixed(currency.decimalDigits);
@@ -68,6 +83,11 @@ abstract final class AppDateFormat {
 
   /// `Oct`.
   static String month(DateTime date) => _month.format(date);
+
+  static final DateFormat _monthName = DateFormat('MMMM');
+
+  /// `October`.
+  static String monthName(DateTime date) => _monthName.format(date);
 
   /// `October 2026`.
   static String monthYear(DateTime date) => _monthYear.format(date);

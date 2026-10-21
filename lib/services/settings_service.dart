@@ -16,6 +16,11 @@ class SettingsService {
   static const String _keyAlerts = 'settings.budgetAlerts';
   static const String _keyThreshold = 'settings.alertThreshold';
   static const String _keyOnboarding = 'settings.onboardingComplete';
+  static const String _keyHaptics = 'settings.haptics';
+  static const String _keyGestureHint = 'settings.gestureHintDismissed';
+  static const String _keyCelebratedMonth = 'celebration.month';
+  static const String _keyStreakStart = 'celebration.streakStart';
+  static const String _keyStreakLength = 'celebration.streakLength';
 
   final String? _regionCode;
   SharedPreferences? _prefs;
@@ -58,6 +63,14 @@ class SettingsService {
             : fallback.alertThresholdPercent,
         onboardingComplete:
             prefs.getBool(_keyOnboarding) ?? fallback.onboardingComplete,
+        hapticsEnabled: prefs.getBool(_keyHaptics) ?? fallback.hapticsEnabled,
+        gestureHintDismissed:
+            prefs.getBool(_keyGestureHint) ?? fallback.gestureHintDismissed,
+        celebratedMonthKey: prefs.getString(_keyCelebratedMonth),
+        celebratedStreakStart: DateTime.tryParse(
+          prefs.getString(_keyStreakStart) ?? '',
+        ),
+        celebratedStreakLength: prefs.getInt(_keyStreakLength) ?? 0,
       );
     } catch (_) {
       return fallback;
@@ -75,6 +88,13 @@ class SettingsService {
         prefs.setBool(_keyAlerts, settings.budgetAlertsEnabled),
         prefs.setInt(_keyThreshold, settings.alertThresholdPercent),
         prefs.setBool(_keyOnboarding, settings.onboardingComplete),
+        prefs.setBool(_keyHaptics, settings.hapticsEnabled),
+        prefs.setBool(_keyGestureHint, settings.gestureHintDismissed),
+        prefs.setInt(_keyStreakLength, settings.celebratedStreakLength),
+        if (settings.celebratedMonthKey case final month?)
+          prefs.setString(_keyCelebratedMonth, month),
+        if (settings.celebratedStreakStart case final start?)
+          prefs.setString(_keyStreakStart, start.toIso8601String()),
       ]);
       return results.every((ok) => ok);
     } catch (_) {

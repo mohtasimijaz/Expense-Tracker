@@ -9,6 +9,7 @@ import '../providers/expense_provider.dart';
 import '../providers/settings_provider.dart';
 import '../utils/app_routes.dart';
 import '../utils/formatters.dart';
+import 'recap_screen.dart';
 import '../widgets/category_breakdown_tile.dart';
 import '../widgets/empty_state_widget.dart';
 import '../widgets/stats/category_pie_chart.dart';
@@ -149,7 +150,22 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.transparent,
-      appBar: AppBar(title: const Text(AppStrings.statsTitle)),
+      appBar: AppBar(
+        title: const Text(AppStrings.statsTitle),
+        actions: [
+          if (!provider.isEmpty)
+            IconButton(
+              tooltip: AppStrings.recapTooltip,
+              icon: const Icon(Icons.auto_awesome_rounded),
+              onPressed: () => Navigator.of(context).push(
+                AppRoutes.fadeSlide<void>(
+                  RecapScreen(month: provider.insights.recapMonth()),
+                  fullscreenDialog: true,
+                ),
+              ),
+            ),
+        ],
+      ),
       body: SafeArea(
         top: false,
         child: Center(
